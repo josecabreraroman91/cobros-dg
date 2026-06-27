@@ -162,7 +162,7 @@ function load(){
 }
 function normName(s){ return String(s==null?'':s).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' '); }
 function gs(n){ n=Math.round(Number(n)||0); return n.toLocaleString('es-PY').replace(/,/g,'.'); }
-function parseNum(v){ let s=String(v==null?'':v).replace(/[^\d-]/g,''); const n=parseInt(s,10); return isNaN(n)?0:n; }
+function parseNum(v){ let s=String(v==null?'':v).replace(/[^\d,.\-]/g,''); s=s.replace(/[,.]/g,''); const n=parseInt(s,10); return isNaN(n)?0:n; }
 
 function reg(nombre){
   const k=normName(nombre);
@@ -211,17 +211,23 @@ async function sync(){
     if(hr<0) for(let r=0;r<Math.min(rows.length,12);r++){ if(rows[r].map(x=>normName(x)).some(h=>h.indexOf('alumno')>-1)){ hr=r; break; } }
     if(hr<0) hr=0;
     _rowsCache=rows; _hr=hr; _headers=rows[hr];
-    // autodetectar columnas (índices). El usuario puede corregir con los selectores.
+    // autodetectar columnas. Como Precio/Teléfono/PENDT tienen encabezado VACÍO,
+    // las ubicamos por posición relativa a anclas que SÍ tienen encabezado.
     let iNom=findCol(_headers,['alumnos','alumno']);
+    let iLado=findCol(_headers,['lado']);
+    let iCom=findCol(_headers,['comentarios']);
+    let iLun=findCol(_headers,['lunes']);
     let iCat=findCol(_headers,['categor','ategor']);
     let iPre=findCol(_headers,['precio']);
     let iTel=findCol(_headers,['telefono','celular','whatsapp']);
-    let iPen=findExact(_headers,['pendt.','pendt','pendiente','pend.','pend','deuda']);
-    if(iPen<0) iPen=findCol(_headers,['pendt','pendiente','deuda','saldo']);
-    if(iPen<0){ for(let r=0;r<=hr;r++){ const idx=rows[r].findIndex(c=>{const n=normName(c);return n.indexOf('pendt')>-1||n.indexOf('pendiente')>-1;}); if(idx>-1){iPen=idx;break;} } }
-    if(iPen<0 && iTel>-1) iPen=iTel+1;
+    let iPen=findExact(_headers,['pendt.','pendt','pendiente']);
+    // anclas: Categoría va antes de Lado; Precio antes de Comentarios; PENDT y Teléfono antes de LUNES
+    if(iCat<0 && iLado>0) iCat=iLado-1;
+    if(iPre<0 && iCom>0) iPre=iCom-1;
+    if(iPen<0 && iLun>0) iPen=iLun-1;       // PENDT. = columna justo antes de LUNES
+    if(iTel<0 && iLun>1) iTel=iLun-2;       // Teléfono = dos antes de LUNES
     if(iNom<0) throw new Error('no encontré la columna "Alumnos"');
-    // usar columnas guardadas si existen
+    // usar columnas guardadas si el usuario las eligió antes
     const C=state.cols;
     if(typeof C.nom==='number') iNom=C.nom;
     if(typeof C.pen==='number') iPen=C.pen;
