@@ -49,6 +49,11 @@
   .acard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
   .acard.deuda{border-left:3px solid var(--clay)}
   .acard.aldia{border-color:#244b3a}
+  /* modo destacado: al tocar el nombre, esa tarjeta se agranda y el resto se atenúa */
+  main.hayfoco .acard{opacity:.4;transform:scale(.99);transition:opacity .15s,transform .15s}
+  main.hayfoco .acard.foco{opacity:1;transform:scale(1);border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+  .acard .aname{cursor:pointer}
+  .acard.foco .aname::after{content:' ✏️';font-size:12px}
   .arow1{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
   .aname{font-weight:700;font-size:15px}
   .acat{font-size:11px;color:var(--muted);font-weight:600;background:var(--panel2);padding:2px 7px;border-radius:6px;margin-left:6px}
@@ -196,7 +201,7 @@ const MESES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','
 
 let state={ sheetId:DEFAULT_SHEET_ID, sheetTab:DEFAULT_SHEET_TAB, cols:{}, alumnos:[], meses:{}, morosos:{}, morososInit:false, info:'' };
 let curY=new Date().getFullYear(), curM=new Date().getMonth();
-let tab='cobros', filter='todos', query='', queryM='';
+let tab='cobros', filter='todos', query='', queryM='', focoIdx=null;
 
 function save(){ localStorage.setItem('cobros_dg_v3', JSON.stringify(state)); }
 function load(){
@@ -370,8 +375,8 @@ function render(){
     const idx=state.alumnos.indexOf(a);
     const fechasH=c.md.fechas.map((f,fi)=>`<span class="fecha ${c.md.fue[f]?'fue':''}" data-f="${idx}|${fi}">${fechaCorta(f)}<span class="x" data-rmf="${idx}|${fi}">✕</span></span>`).join('');
     const pagos=c.md.pagos;
-    return `<div class="acard ${c.saldo>0?'deuda':(c.aCobrar>0?'aldia':'')}" data-card="${idx}">
-      <div class="arow1"><div><span class="aname">${esc(a.nombre)}</span>${a.cat?`<span class="acat">Cat ${esc(a.cat)}</span>`:''}</div></div>
+    return `<div class="acard ${c.saldo>0?'deuda':(c.aCobrar>0?'aldia':'')}${focoIdx===idx?' foco open':''}" data-card="${idx}">
+      <div class="arow1"><div><span class="aname" data-foco="${idx}">${esc(a.nombre)}</span>${a.cat?`<span class="acat">Cat ${esc(a.cat)}</span>`:''}</div></div>
       <div class="grid3">
         <div class="stat"><div class="k">Clases</div><div class="v mono">${c.clases}</div></div>
         <div class="stat"><div class="k">Monto mes</div><div class="v mono">${gs(c.monto)}</div></div>
@@ -399,9 +404,11 @@ function render(){
       </div>
     </div>`;
   }).join('');
+  el.classList.toggle('hayfoco', focoIdx!=null);
   wireCobros(el);
 }
 function wireCobros(el){
+  el.querySelectorAll('[data-foco]').forEach(s=>s.onclick=(e)=>{ e.stopPropagation(); const i=+s.dataset.foco; focoIdx=(focoIdx===i?null:i); render(); if(focoIdx!=null){ const c=document.querySelector('.acard.foco'); if(c){ c.classList.add('open'); c.scrollIntoView({block:'center',behavior:'smooth'}); } } });
   el.querySelectorAll('[data-exp]').forEach(s=>s.onclick=()=>el.querySelector(`[data-card="${s.dataset.exp}"]`).classList.toggle('open'));
   el.querySelectorAll('[data-f]').forEach(s=>s.onclick=(e)=>{ if(e.target.dataset.rmf!==undefined) return; const [i,fi]=s.dataset.f.split('|').map(Number); const a=state.alumnos[i]; const md=mesData(a,curY,curM); const f=md.fechas[fi]; md.fue[f]=!md.fue[f]; save(); render(); reopen(i); });
   el.querySelectorAll('[data-rmf]').forEach(s=>s.onclick=(e)=>{ e.stopPropagation(); const [i,fi]=s.dataset.rmf.split('|').map(Number); const a=state.alumnos[i]; const md=mesData(a,curY,curM); const f=md.fechas[fi]; md.fechas.splice(fi,1); delete md.fue[f]; save(); render(); reopen(i); });
@@ -456,7 +463,15 @@ function normPhone(raw){ let d=String(raw||'').replace(/\D/g,''); if(!d) return 
 function enviarWA(idx){
   const a=state.alumnos[idx]; const tel=normPhone(a.tel); if(!tel){ alert('Sin teléfono en la hoja.'); return; }
   const c=calc(a);
-  const msg=`Hola ${a.nombre}! 👋\n\nResumen de ${MESES[curM]} ${curY} - Academia DG:\n🎾 Clases: ${c.clases}\n💵 Monto del mes: Gs. ${gs(c.monto)}\n`+(c.previa>0?`📌 Deuda anterior: Gs. ${gs(c.previa)}\n`:'')+(c.pagado>0?`✅ Pagado: Gs. ${gs(c.pagado)}\n`:'')+(c.saldo>0?`⚠️ Saldo: Gs. ${gs(c.saldo)}\n`:`✅ ¡Al día! Gracias 🙌\n`);
+  const primerNombre=a.nombre.trim().split(/\s+/)[0];
+  const fue=c.md.fechas.filter(f=>c.md.fue[f]);
+  let lineaDias='';
+  if(c.clases>0){
+    lineaDias='📅 Asistió a '+fue.length+' de '+c.clases+' clases';
+    if(fue.length>0) lineaDias+='\n🗓️ '+fue.map(f=>fechaCorta(f)).join(', ');
+    lineaDias+='\n';
+  }
+  const msg=`Hola ${primerNombre}! 👋\n\nResumen de ${MESES[curM]} ${curY} - Academia DG:\n🎾 Clases: ${c.clases}\n`+lineaDias+`Monto del mes: Gs. ${gs(c.monto)}\n`+(c.previa>0?`📌 Deuda anterior: Gs. ${gs(c.previa)}\n`:'')+(c.pagado>0?`✅ Pagado: Gs. ${gs(c.pagado)}\n`:'');
   window.open('https://web.whatsapp.com/send?phone='+tel+'&text='+encodeURIComponent(msg),'waCobros');
 }
 function enviarWAMoroso(a, monto){
@@ -507,17 +522,17 @@ function rr(x,X,Y,w,h,r){ x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r)
 function descargarComp(){ const a=state.alumnos[compIdx]; const l=document.createElement('a'); l.download='resumen_'+normName(a.nombre).replace(/ /g,'_')+'_'+MESES[curM]+'.png'; l.href=document.getElementById('compCanvas').toDataURL('image/png'); document.body.appendChild(l); l.click(); document.body.removeChild(l); }
 
 // ===== nav y wire =====
-function setTab(t){ tab=t; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+function setTab(t){ tab=t; focoIdx=null; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   document.getElementById('cobrosHead').style.display= t==='cobros'?'block':'none';
   document.getElementById('morososHead').style.display= t==='morosos'?'block':'none';
   render();
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
-document.getElementById('prevMonth').onclick=()=>{ curM--; if(curM<0){curM=11;curY--;} render(); };
-document.getElementById('nextMonth').onclick=()=>{ curM++; if(curM>11){curM=0;curY++;} render(); };
-document.getElementById('search').oninput=(e)=>{ query=e.target.value; render(); };
+document.getElementById('prevMonth').onclick=()=>{ curM--; if(curM<0){curM=11;curY--;} focoIdx=null; render(); };
+document.getElementById('nextMonth').onclick=()=>{ curM++; if(curM>11){curM=0;curY++;} focoIdx=null; render(); };
+document.getElementById('search').oninput=(e)=>{ query=e.target.value; focoIdx=null; render(); };
 document.getElementById('searchM').oninput=(e)=>{ queryM=e.target.value; renderMorosos(); };
-document.querySelectorAll('.chip[data-filter]').forEach(ch=>ch.onclick=()=>{ document.querySelectorAll('.chip[data-filter]').forEach(c=>{c.classList.remove('active');c.classList.remove('deuda');}); ch.classList.add('active'); if(ch.dataset.filter==='deuda') ch.classList.add('deuda'); filter=ch.dataset.filter; render(); });
+document.querySelectorAll('.chip[data-filter]').forEach(ch=>ch.onclick=()=>{ document.querySelectorAll('.chip[data-filter]').forEach(c=>{c.classList.remove('active');c.classList.remove('deuda');}); ch.classList.add('active'); if(ch.dataset.filter==='deuda') ch.classList.add('deuda'); filter=ch.dataset.filter; focoIdx=null; render(); });
 document.getElementById('btnSync').onclick=()=>{ document.getElementById('fSheetId').value=state.sheetId; document.getElementById('fSheetTab').value=state.sheetTab; document.getElementById('syncStatus').textContent=state.info||''; document.getElementById('ovSync').classList.add('show'); };
 document.getElementById('doSync').onclick=sync;
 document.getElementById('closeSync').onclick=()=>document.getElementById('ovSync').classList.remove('show');
