@@ -201,8 +201,16 @@ async function sync(){
     const iCat=findCol(_headers,['categor','ategor']);
     const iPre=findCol(_headers,['precio']);
     const iTel=findCol(_headers,['telefono','celular','whatsapp']);
-    let iPen=findExact(_headers,['pendt.','pendt','pendiente','pend.','pend']);
-    if(iPen<0) iPen=findCol(_headers,['pendt','pendiente']);
+    // PENDT. (pendiente): el rótulo puede estar en otra fila (en la planilla está en la fila 1, no en la 2)
+    let iPen=findExact(_headers,['pendt.','pendt','pendiente','pend.','pend','deuda']);
+    if(iPen<0) iPen=findCol(_headers,['pendt','pendiente','deuda','saldo']);
+    if(iPen<0){ // escanear las primeras filas buscando el rótulo PENDT
+      for(let r=0;r<Math.min(rows.length,hr+1);r++){
+        const idx=rows[r].findIndex(c=>{ const n=normName(c); return n==='pendt.'||n==='pendt'||n.indexOf('pendiente')>-1||n.indexOf('pendt')>-1; });
+        if(idx>-1){ iPen=idx; break; }
+      }
+    }
+    if(iPen<0 && iTel>-1){ iPen=iTel+1; } // último recurso: columna a la derecha del teléfono
     if(iNom<0) throw new Error('no encontré la columna "Alumnos"');
     const out=[];
     for(let r=hr+1;r<rows.length;r++){
@@ -232,7 +240,7 @@ function render(){
   if(filter==='deuda') lista=lista.filter(x=>x.c.tieneDeuda);
   else if(filter==='aldia') lista=lista.filter(x=>!x.c.tieneDeuda && x.c.aCobrar>0);
   else if(filter==='cobrados') lista=lista.filter(x=>x.c.pagado>0);
-  else lista=lista.filter(x=>x.c.aCobrar>0 || x.c.pagado>0);
+  else lista=lista.filter(x=>x.c.aCobrar>0 || x.c.pagado>0 || x.a.precio>0);
   lista.sort((x,y)=> y.c.saldo-x.c.saldo || x.a.nombre.localeCompare(y.a.nombre));
 
   let tDeuda=0,tCobrado=0,nAldia=0;
