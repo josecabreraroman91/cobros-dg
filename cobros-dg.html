@@ -459,6 +459,10 @@ function generarCuenta(idx){
   if(!state.morosos[n]) state.morosos[n]={monto:0,nota:'',cargos:[],pagos:[]};
   if(!state.morosos[n].cargos) state.morosos[n].cargos=[];
   if(!state.morosos[n].pagos) state.morosos[n].pagos=[];
+  // si ya tenía deuda anterior (del PENDT) pero sin cargos, la convertimos en un cargo inicial
+  if(state.morosos[n].cargos.length===0 && previo>0){
+    state.morosos[n].cargos.push({monto:previo, concepto:'Deuda anterior (planilla)', fecha:hoyISO()});
+  }
   state.morosos[n].cargos.push({monto:c.monto, concepto:MESES[curM]+' '+curY+' ('+c.clases+' clases)', fecha:hoyISO()});
   state.morosos[n].monto=nuevoTotal;
   md.generada=true;
