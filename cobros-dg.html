@@ -101,6 +101,14 @@
   #compCanvas{width:100%;max-width:400px;border-radius:12px;border:1px solid var(--line)}
   #compWrap{display:flex;flex-direction:column;align-items:center;gap:12px}
   .deudaprev{font-size:12px;color:var(--clay);margin-top:6px}
+  /* grilla de horarios */
+  .hgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:10px}
+  .hcol{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 3px;text-align:center}
+  .hcol.on{background:#26343f;border-color:#3a5a72}
+  .hcol .hd{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.3px}
+  .hcol.on .hd{color:#bcd6ef}
+  .hcol .hh{font-size:13px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+  .hcol.on .hh{color:#e9edf2}
 </style>
 </head>
 <body>
@@ -110,6 +118,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="cobros">💰 Cobros del mes</button>
     <button class="tab" data-tab="morosos">⚠️ Morosos</button>
+    <button class="tab" data-tab="horarios">📅 Horarios</button>
   </div>
 
   <div id="cobrosHead">
@@ -143,6 +152,15 @@
       <div class="search"><input id="searchM" placeholder="Buscar moroso…"></div>
       <button class="btn" id="btnImportMor">⬇️ Importar deudas de la planilla</button>
     </div>
+  </div>
+
+  <div id="horariosHead" style="display:none">
+    <div class="toolbar">
+      <div class="search"><input id="searchH" placeholder="Agregar alumno a comparar…" list="alumnosDL2"><datalist id="alumnosDL2"></datalist></div>
+      <button class="btn primary" id="btnAddHor">+ Agregar</button>
+      <button class="btn" id="btnClearHor">Limpiar</button>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:6px">Buscá alumnos y se van apilando para comparar sus días y horarios. Los datos se actualizan al 🔄 Sincronizar.</p>
   </div>
 </header>
 
@@ -204,7 +222,7 @@ const MESES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','
 
 let state={ sheetId:DEFAULT_SHEET_ID, sheetTab:DEFAULT_SHEET_TAB, cols:{}, alumnos:[], meses:{}, morosos:{}, morososInit:false, info:'' };
 let curY=new Date().getFullYear(), curM=new Date().getMonth();
-let tab='cobros', filter='todos', query='', queryM='', focoIdx=null;
+let tab='cobros', filter='todos', query='', queryM='', focoIdx=null, horComparar=[];
 
 function save(){ localStorage.setItem('cobros_dg_v3', JSON.stringify(state)); }
 function load(){
@@ -341,12 +359,15 @@ function construir(iNom,iCat,iPre,iTel,iPen,iLun){
   const rows=_rows, hr=_hr; const out=[];
   const diasCols=[iLun,iLun+1,iLun+2,iLun+3,iLun+4,iLun+5]; // L,M,X,J,V,S
   const wd=[1,2,3,4,5,6]; // weekday JS
+  const lblDia=['LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+  const iProf=findCol(_headers,['profesor','profe']);
   for(let r=hr+1;r<rows.length;r++){
     const nombre=(rows[r][iNom]||'').trim(); if(!nombre) continue;
-    const dias=[];
-    diasCols.forEach((c,k)=>{ const v=(rows[r][c]||'').trim(); if(v && v!=='-' && v!=='N/A') dias.push(wd[k]); });
+    const dias=[]; const horarios=[];
+    diasCols.forEach((c,k)=>{ const v=(rows[r][c]||'').trim(); if(v && v!=='-' && v!=='N/A'){ dias.push(wd[k]); horarios.push({dia:lblDia[k], hora:v}); } });
     out.push({ nombre, cat:(iCat>-1?(rows[r][iCat]||'').trim():''), precio:(iPre>-1?parseNum(rows[r][iPre]):0),
-      tel:(iTel>-1?(rows[r][iTel]||'').trim():''), pendiente:(iPen>-1?parseNum(rows[r][iPen]):0), dias });
+      tel:(iTel>-1?(rows[r][iTel]||'').trim():''), pendiente:(iPen>-1?parseNum(rows[r][iPen]):0),
+      profe:(iProf>-1?(rows[r][iProf]||'').trim():''), dias, horarios });
   }
   state.alumnos=out; state.cols={nom:iNom,pre:iPre,tel:iTel,pen:iPen};
   // seed morosos la primera vez
@@ -355,12 +376,13 @@ function construir(iNom,iCat,iPre,iTel,iPen,iLun){
   state.info='✅ '+out.length+' alumnos · '+conDias+' con días cargados · '+Object.keys(state.morosos).length+' morosos';
   save(); document.getElementById('syncStatus').textContent=state.info; render(); fillDatalist();
 }
-function fillDatalist(){ const dl=document.getElementById('alumnosDL'); if(dl) dl.innerHTML=state.alumnos.map(a=>`<option value="${a.nombre.replace(/"/g,'&quot;')}">`).join(''); }
+function fillDatalist(){ const html=state.alumnos.map(a=>`<option value="${a.nombre.replace(/"/g,'&quot;')}">`).join(''); const dl=document.getElementById('alumnosDL'); if(dl) dl.innerHTML=html; const dl2=document.getElementById('alumnosDL2'); if(dl2) dl2.innerHTML=html; }
 
 // ===== render COBROS =====
 function render(){
   document.getElementById('monthLabel').textContent=MESES[curM]+' '+curY;
   if(tab==='morosos'){ renderMorosos(); return; }
+  if(tab==='horarios'){ renderHorarios(); return; }
   const q=normName(query);
   let lista=state.alumnos.filter(a=>a.dias.length>0 || (state.meses[curKey()]&&state.meses[curKey()][normName(a.nombre)]));
   lista=lista.map(a=>({a,c:calc(a)}));
@@ -480,6 +502,38 @@ function renderMorosos(){
   el.querySelectorAll('[data-morwa]').forEach(b=>b.onclick=()=>{ const n=b.dataset.morwa; const a=state.alumnos.find(x=>normName(x.nombre)===n); if(a) enviarWAMoroso(a, state.morosos[n].monto); });
 }
 
+// ===== render HORARIOS =====
+const ORDEN_DIAS=['LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+function renderHorarios(){
+  const el=document.getElementById('list');
+  if(!state.alumnos.length){ el.innerHTML='<div class="empty"><h3>Sin datos todavía</h3><p>Tocá 🔄 Sincronizar para traer los alumnos.</p></div>'; return; }
+  if(!horComparar.length){ el.innerHTML='<div class="empty"><h3>Consultá horarios</h3><p>Buscá un alumno arriba y agregalo. Podés sumar varios para comparar sus días y horarios.</p></div>'; return; }
+  el.innerHTML=horComparar.map((nombreN,pos)=>{
+    const a=state.alumnos.find(x=>normName(x.nombre)===nombreN);
+    if(!a) return '';
+    const horas=a.horarios&&a.horarios.length?a.horarios:[];
+    const totalHorasSem=horas.length;
+    const montoEstim=totalHorasSem*4*(a.precio||0); // estimación: clases/semana × ~4 semanas × precio
+    const chips=ORDEN_DIAS.map(d=>{ const h=horas.find(x=>x.dia===d); return `<div class="hcol ${h?'on':''}"><div class="hd">${d}</div><div class="hh">${h?esc(h.hora):'—'}</div></div>`; }).join('');
+    return `<div class="acard">
+      <div class="arow1">
+        <div><span class="aname">${esc(a.nombre)}</span>${a.cat?`<span class="acat">Cat ${esc(a.cat)}</span>`:''}${a.profe?`<span class="acat" style="background:#2a2440;color:#c9b8ff">Profe ${esc(a.profe)}</span>`:''}</div>
+        <span class="x" data-rmhor="${pos}" style="color:var(--red);cursor:pointer;font-weight:800">✕</span>
+      </div>
+      <div class="hgrid">${chips}</div>
+      <div class="ajustes" style="margin-top:8px">${totalHorasSem} clase(s)/semana · precio x clase: Gs. ${gs(a.precio)} · estimado mensual: <b style="color:var(--court)">Gs. ${gs(montoEstim)}</b></div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-rmhor]').forEach(b=>b.onclick=()=>{ horComparar.splice(+b.dataset.rmhor,1); renderHorarios(); });
+}
+function addHorario(nombre){
+  const a=state.alumnos.find(x=>normName(x.nombre)===normName(nombre));
+  if(!a){ alert('No encontré ese alumno. Escribí el nombre completo.'); return; }
+  const n=normName(a.nombre);
+  if(!horComparar.includes(n)) horComparar.push(n);
+  renderHorarios();
+}
+
 // ===== WhatsApp =====
 function normPhone(raw){ let d=String(raw||'').replace(/\D/g,''); if(!d) return ''; if(d.indexOf('595')===0) return d; if(d.charAt(0)==='0') d=d.slice(1); return d.length<=10?'595'+d:d; }
 function enviarWA(idx){
@@ -554,6 +608,7 @@ function descargarComp(){ const a=state.alumnos[compIdx]; const l=document.creat
 function setTab(t){ tab=t; focoIdx=null; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   document.getElementById('cobrosHead').style.display= t==='cobros'?'block':'none';
   document.getElementById('morososHead').style.display= t==='morosos'?'block':'none';
+  document.getElementById('horariosHead').style.display= t==='horarios'?'block':'none';
   render();
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
@@ -571,6 +626,10 @@ document.getElementById('closeComp').onclick=()=>document.getElementById('ovComp
 document.getElementById('btnImportMor').onclick=()=>{ let n=0; state.alumnos.forEach(a=>{ if(a.pendiente>0){ const k=normName(a.nombre); if(!state.morosos[k]){ state.morosos[k]={monto:a.pendiente,nota:''}; n++; } else { state.morosos[k].monto=a.pendiente; } } }); save(); renderMorosos(); alert('Importados/actualizados desde la planilla. Nuevos: '+n); };
 document.getElementById('addMorOk').onclick=()=>{ const nom=document.getElementById('addMorSearch').value.trim(); const monto=parseNum(document.getElementById('addMorMonto').value); if(!nom) return; const a=state.alumnos.find(x=>normName(x.nombre)===normName(nom)); const k=normName(nom); state.morosos[k]={monto,nota:''}; save(); document.getElementById('ovAddMor').classList.remove('show'); renderMorosos(); };
 document.getElementById('addMorCancel').onclick=()=>document.getElementById('ovAddMor').classList.remove('show');
+const sH=document.getElementById('searchH');
+document.getElementById('btnAddHor').onclick=()=>{ const v=sH.value.trim(); if(v){ addHorario(v); sH.value=''; } };
+sH.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ const v=sH.value.trim(); if(v){ addHorario(v); sH.value=''; } } });
+document.getElementById('btnClearHor').onclick=()=>{ horComparar=[]; renderHorarios(); };
 ['ovSync','ovComp','ovAddMor'].forEach(id=>document.getElementById(id).onclick=(e)=>{ if(e.target.id===id) document.getElementById(id).classList.remove('show'); });
 
 load(); fillDatalist(); render();
