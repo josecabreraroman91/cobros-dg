@@ -128,9 +128,9 @@
       <button class="iconbtn" id="nextMonth">›</button>
     </div>
     <div class="totals">
-      <div class="tcard"><div class="k">A cobrar (mes)</div><div class="v mono" id="tCobrarMes">—</div></div>
-      <div class="tcard cobrado"><div class="k">Cobrado</div><div class="v mono" id="tCobrado">—</div></div>
-      <div class="tcard deuda"><div class="k">Saldo total</div><div class="v mono" id="tSaldo">—</div></div>
+      <div class="tcard"><div class="k">A facturar (mes)</div><div class="v mono" id="tCobrarMes">—</div></div>
+      <div class="tcard cobrado"><div class="k">Generadas</div><div class="v mono" id="tCobrado">—</div></div>
+      <div class="tcard"><div class="k">Pendientes</div><div class="v mono" id="tSaldo">—</div></div>
     </div>
     <div class="toolbar">
       <div class="search"><input id="search" placeholder="Buscar alumno…"></div>
@@ -138,8 +138,8 @@
     </div>
     <div class="filters">
       <button class="chip active" data-filter="todos">Todos</button>
-      <button class="chip" data-filter="deuda">Con saldo</button>
-      <button class="chip" data-filter="aldia">Al día</button>
+      <button class="chip" data-filter="pendientes">Sin generar</button>
+      <button class="chip" data-filter="generadas">Generadas</button>
     </div>
   </div>
 
@@ -388,15 +388,15 @@ function render(){
   let lista=state.alumnos.filter(a=>a.dias.length>0 || (state.meses[curKey()]&&state.meses[curKey()][normName(a.nombre)]));
   lista=lista.map(a=>({a,c:calc(a)}));
   if(q) lista=lista.filter(x=>normName(x.a.nombre).indexOf(q)>-1);
-  if(filter==='deuda') lista=lista.filter(x=>x.c.saldo>0);
-  else if(filter==='aldia') lista=lista.filter(x=>x.c.saldo<=0 && x.c.aCobrar>0);
-  lista.sort((x,y)=> y.c.saldo-x.c.saldo || x.a.nombre.localeCompare(y.a.nombre));
+  if(filter==='generadas') lista=lista.filter(x=>cuentaGenerada(x.a));
+  else if(filter==='pendientes') lista=lista.filter(x=>!cuentaGenerada(x.a) && x.c.monto>0);
+  lista.sort((x,y)=> (cuentaGenerada(x.a)?1:0)-(cuentaGenerada(y.a)?1:0) || x.a.nombre.localeCompare(y.a.nombre));
 
-  let tc=0,tco=0,tsa=0;
-  state.alumnos.forEach(a=>{ if(a.dias.length>0||(state.meses[curKey()]&&state.meses[curKey()][normName(a.nombre)])){ const c=calc(a); tc+=c.monto; tco+=c.pagado; tsa+=Math.max(0,c.saldo); } });
+  let tc=0, nGen=0, nTot=0;
+  state.alumnos.forEach(a=>{ if(a.dias.length>0||(state.meses[curKey()]&&state.meses[curKey()][normName(a.nombre)])){ const c=calc(a); if(c.monto>0){ tc+=c.monto; nTot++; if(cuentaGenerada(a)) nGen++; } } });
   document.getElementById('tCobrarMes').textContent=gs(tc);
-  document.getElementById('tCobrado').textContent=gs(tco);
-  document.getElementById('tSaldo').textContent=gs(tsa);
+  document.getElementById('tCobrado').textContent=nGen;
+  document.getElementById('tSaldo').textContent=(nTot-nGen);
 
   const el=document.getElementById('list');
   if(!state.alumnos.length){ el.innerHTML='<div class="empty"><h3>Sin datos todavía</h3><p>Tocá 🔄 Sincronizar para traer los alumnos.</p></div>'; return; }
@@ -405,36 +405,25 @@ function render(){
   el.innerHTML=lista.map(({a,c})=>{
     const idx=state.alumnos.indexOf(a);
     const fechasH=c.md.fechas.map((f,fi)=>{ const hrs=horasDe(c.md,f); return `<span class="fecha ${c.md.fue[f]?'fue':''}" data-f="${idx}|${fi}">${fechaCorta(f)}${hrs>1?` · ${hrs}h`:''}<span class="hplus" data-addh="${idx}|${fi}" title="sumar hora">+h</span><span class="x" data-rmf="${idx}|${fi}">✕</span></span>`; }).join('');
-    const pagos=c.md.pagos;
-    return `<div class="acard ${c.saldo>0?'deuda':(c.aCobrar>0?'aldia':'')}${focoIdx===idx?' foco open':''}" data-card="${idx}">
-      <div class="arow1"><div><span class="aname" data-foco="${idx}">${esc(a.nombre)}</span>${a.cat?`<span class="acat">Cat ${esc(a.cat)}</span>`:''}</div></div>
+    const gen=cuentaGenerada(a);
+    return `<div class="acard ${gen?'aldia':''}${focoIdx===idx?' foco open':''}" data-card="${idx}">
+      <div class="arow1"><div><span class="aname" data-foco="${idx}">${esc(a.nombre)}</span>${a.cat?`<span class="acat">Cat ${esc(a.cat)}</span>`:''}${gen?`<span class="acat" style="background:#1d3a2c;color:#7df0aa">✓ generada</span>`:''}</div></div>
       <div class="grid3">
         <div class="stat"><div class="k">Horas/clases</div><div class="v mono">${c.clases}</div></div>
-        <div class="stat"><div class="k">Monto mes</div><div class="v mono">${gs(c.monto)}</div></div>
-        <div class="stat saldo ${c.saldo<=0?'ok':''}"><div class="k">${c.saldo<=0?'Al día':'Saldo'}</div><div class="v mono">${c.saldo<=0?'✓':gs(c.saldo)}</div></div>
+        <div class="stat"><div class="k">Precio x clase</div><div class="v mono">${gs(c.precio)}</div></div>
+        <div class="stat"><div class="k">Monto mes</div><div class="v mono" style="color:var(--court)">${gs(c.monto)}</div></div>
       </div>
-      ${c.previa>0?`<div class="deudaprev">+ deuda de meses anteriores: Gs. ${gs(c.previa)}</div>`:''}
-      <span class="expand" data-exp="${idx}">⚙️ Fechas, precio y pagos ▾</span>
+      <span class="expand" data-exp="${idx}">⚙️ Fechas y precio ▾</span>
       <div class="adetail">
         <div class="dateshdr"><span class="lbl">Fechas (tocá = marca 🟢 que vino · +h suma hora · ✕ saca el día)</span></div>
         <div class="fechas">${fechasH}<button class="addfecha" data-addf="${idx}">+ fecha</button></div>
         <div class="field-row" style="margin-top:10px">
           <div class="field"><label>Precio por clase</label><input type="number" inputmode="numeric" value="${c.precio||''}" placeholder="${gs(a.precio)}" data-precio="${idx}"></div>
-          <div class="field"><label>Registrar pago Gs.</label><input type="number" inputmode="numeric" placeholder="0" data-pago="${idx}"></div>
+          <div class="field"><label>Monto del mes</label><input class="mono" value="${gs(c.monto)}" disabled></div>
         </div>
-        <div class="field-row">
-          <div class="field"><label>Fecha del pago</label><input type="date" value="${hoyISO()}" data-fechapago="${idx}"></div>
-          <div class="field"><label>Método</label><select data-metodo="${idx}"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>QR</option><option>Otro</option></select></div>
-        </div>
-        <div class="field-row">
-          <div class="field"><label>Nota (opcional)</label><input data-notapago="${idx}" placeholder="Ej: transferencia Itaú, lo trajo el padre…"></div>
-          <button class="btn pay" data-addpago="${idx}" style="align-self:flex-end;height:42px;flex:0 0 auto;padding:0 16px">+ Pago</button>
-        </div>
-        ${pagos.length?`<div class="ajustes">Historial: ${pagos.map(p=>`<div style="margin-top:3px">📅 ${p.fecha?fechaCorta(p.fecha):'-'} · Gs.${gs(p.monto)} · ${esc(p.metodo||'-')}${p.nota?' · '+esc(p.nota):''} <span data-rmpago="${idx}|${pagos.indexOf(p)}" style="color:var(--red);cursor:pointer">✕</span></div>`).join('')}</div>`:''}
         <div class="aactions">
-          <button class="btn pay" data-pagartodo="${idx}">Pagar saldo</button>
           <button class="btn comp" data-comp="${idx}">🧾 Resumen</button>
-          ${a.tel?`<button class="btn wa" data-wa="${idx}">💬</button>`:''}
+          ${a.tel?`<button class="btn wa" data-wa="${idx}">💬 Enviar</button>`:''}
         </div>
         <div class="aactions">
           <button class="btn gen" data-gencuenta="${idx}">📌 Generar cuenta → Morosos</button>
@@ -453,59 +442,95 @@ function wireCobros(el){
   el.querySelectorAll('[data-rmf]').forEach(s=>s.onclick=(e)=>{ e.stopPropagation(); const [i,fi]=s.dataset.rmf.split('|').map(Number); const a=state.alumnos[i]; const md=mesData(a,curY,curM); const f=md.fechas[fi]; md.fechas.splice(fi,1); delete md.fue[f]; delete md.horas[f]; save(); render(); reopen(i); });
   el.querySelectorAll('[data-addf]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.addf; const a=state.alumnos[i]; const dia=prompt('¿Qué día agregar? (número del día del mes, ej: 15)'); const d=parseInt(dia); if(!d||d<1||d>31) return; const iso=periodoKey(curY,curM).split('-')[0]+'-'+String(curM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const md=mesData(a,curY,curM); if(!md.fechas.includes(iso)){ md.fechas.push(iso); md.fechas.sort(); } save(); render(); reopen(i); });
   el.querySelectorAll('[data-precio]').forEach(inp=>inp.onchange=()=>{ const i=+inp.dataset.precio; const md=mesData(state.alumnos[i],curY,curM); md.precio=inp.value===''?null:parseNum(inp.value); save(); render(); reopen(i); });
-  el.querySelectorAll('[data-addpago]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.addpago; const inp=el.querySelector(`[data-pago="${i}"]`); const met=el.querySelector(`[data-metodo="${i}"]`).value; const fp=el.querySelector(`[data-fechapago="${i}"]`).value||hoyISO(); const nota=(el.querySelector(`[data-notapago="${i}"]`).value||'').trim(); const m=parseNum(inp.value); if(m>0){ mesData(state.alumnos[i],curY,curM).pagos.push({monto:m,metodo:met,nota,fecha:fp}); save(); render(); reopen(i); } });
-  el.querySelectorAll('[data-pagartodo]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.pagartodo; const c=calc(state.alumnos[i]); if(c.saldo>0){ mesData(state.alumnos[i],curY,curM).pagos.push({monto:c.saldo,metodo:'Efectivo',nota:'',fecha:hoyISO()}); save(); render(); reopen(i); } });
-  el.querySelectorAll('[data-rmpago]').forEach(s=>s.onclick=()=>{ const [i,pi]=s.dataset.rmpago.split('|').map(Number); mesData(state.alumnos[i],curY,curM).pagos.splice(pi,1); save(); render(); reopen(i); });
   el.querySelectorAll('[data-comp]').forEach(b=>b.onclick=()=>openComp(+b.dataset.comp));
   el.querySelectorAll('[data-wa]').forEach(b=>b.onclick=()=>enviarWA(+b.dataset.wa));
   el.querySelectorAll('[data-gencuenta]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.gencuenta; generarCuenta(i); });
 }
-// Genera la cuenta del mes: guarda el saldo como deuda del alumno y lo manda a Morosos
+function cuentaGenerada(a){ const k=curKey(); return !!(state.meses[k] && state.meses[k][normName(a.nombre)] && state.meses[k][normName(a.nombre)].generada); }
+// Genera la cuenta del mes: SUMA lo del mes a la deuda del alumno en Morosos
 function generarCuenta(idx){
   const a=state.alumnos[idx]; const c=calc(a); const n=normName(a.nombre);
-  if(c.saldo<=0){ alert(a.nombre+' está al día, no tiene saldo para generar.'); return; }
-  if(!confirm('Generar cuenta de '+a.nombre+' por Gs. '+gs(c.saldo)+' y mandarlo a Morosos?')) return;
-  state.morosos[n]={ monto:c.saldo, nota:'Generado en '+MESES[curM]+' '+curY };
-  save();
-  alert('✅ Cuenta generada. '+a.nombre+' aparece en Morosos con Gs. '+gs(c.saldo)+'.\n\nPodés verlo en la pestaña ⚠️ Morosos.');
+  if(c.monto<=0){ alert(a.nombre+' no tiene monto este mes para generar.'); return; }
+  const md=mesData(a,curY,curM);
+  if(md.generada){ if(!confirm(a.nombre+' ya tiene la cuenta de '+MESES[curM]+' generada. ¿Generar de nuevo y volver a sumar?')) return; }
+  const previo=state.morosos[n]?(state.morosos[n].monto||0):0;
+  const nuevoTotal=previo+c.monto;
+  if(!confirm('Generar cuenta de '+a.nombre+' por Gs. '+gs(c.monto)+' ('+MESES[curM]+').'+(previo>0?'\n\nYa debía Gs. '+gs(previo)+'. Total quedará en Gs. '+gs(nuevoTotal)+'.':'')+'\n\nSe suma a Morosos. ¿Confirmar?')) return;
+  if(!state.morosos[n]) state.morosos[n]={monto:0,nota:'',cargos:[],pagos:[]};
+  if(!state.morosos[n].cargos) state.morosos[n].cargos=[];
+  if(!state.morosos[n].pagos) state.morosos[n].pagos=[];
+  state.morosos[n].cargos.push({monto:c.monto, concepto:MESES[curM]+' '+curY+' ('+c.clases+' clases)', fecha:hoyISO()});
+  state.morosos[n].monto=nuevoTotal;
+  md.generada=true;
+  save(); render(); reopen(idx);
+  alert('✅ Cuenta generada y sumada a Morosos.\n'+a.nombre+' debe ahora Gs. '+gs(nuevoTotal)+'.\n\nLos pagos se cargan en la pestaña ⚠️ Morosos.');
 }
 function reopen(i){ const c=document.querySelector(`[data-card="${i}"]`); if(c) c.classList.add('open'); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ===== render MOROSOS =====
+// ===== MOROSOS: cálculo deuda/pagos/saldo =====
+function morCargado(m){ return m.cargos? m.cargos.reduce((s,c)=>s+(c.monto||0),0) : (m.monto||0); }
+function morPagado(m){ return m.pagos? m.pagos.reduce((s,p)=>s+(p.monto||0),0) : 0; }
+function morSaldo(m){
+  // si tiene cargos, saldo = cargos - pagos; si es deuda manual/planilla (sin cargos), saldo = monto - pagos
+  const base = (m.cargos && m.cargos.length) ? morCargado(m) : (m.monto||0);
+  return base - morPagado(m);
+}
 function renderMorosos(){
   const q=normName(queryM);
   let arr=Object.keys(state.morosos).map(n=>({n, m:state.morosos[n], a:state.alumnos.find(x=>normName(x.nombre)===n)}));
-  arr=arr.filter(x=>x.m.monto>0 || x.m.monto===0);
   if(q) arr=arr.filter(x=> (x.a?normName(x.a.nombre):x.n).indexOf(q)>-1);
-  arr.sort((x,y)=> (y.m.monto||0)-(x.m.monto||0));
-  let total=0; Object.values(state.morosos).forEach(m=>total+=(m.monto||0));
+  arr.sort((x,y)=> morSaldo(y.m)-morSaldo(x.m));
+  let total=0; Object.values(state.morosos).forEach(m=>total+=Math.max(0,morSaldo(m)));
   document.getElementById('tMorosos').textContent=gs(total);
-  document.getElementById('nMorosos').textContent=Object.keys(state.morosos).length;
+  document.getElementById('nMorosos').textContent=arr.length;
 
   const el=document.getElementById('list');
   el.innerHTML=`<div style="margin-bottom:10px"><button class="btn primary" id="btnAddMor" style="width:100%">+ Agregar moroso manual</button></div>`+
     (arr.length? arr.map(({n,m,a})=>{
       const nombre=a?a.nombre:n; const tel=a?a.tel:'';
-      return `<div class="acard deuda">
-        <div class="arow1"><div><span class="aname">${esc(nombre)}</span></div><div class="v mono" style="color:var(--clay);font-weight:800">${gs(m.monto)}</div></div>
-        <div class="field-row" style="margin-top:8px">
-          <div class="field"><label>Deuda Gs.</label><input type="number" inputmode="numeric" value="${m.monto||''}" data-mor="${n}"></div>
-          <div class="field"><label>Nota</label><input value="${esc(m.nota||'')}" placeholder="Opcional" data-mornota="${n}"></div>
+      const deuda=(m.cargos&&m.cargos.length)?morCargado(m):(m.monto||0);
+      const pagado=morPagado(m); const saldo=deuda-pagado;
+      const pagos=m.pagos||[]; const cargos=m.cargos||[];
+      return `<div class="acard ${saldo>0?'deuda':'aldia'}" data-mcard="${n}">
+        <div class="arow1"><div><span class="aname" data-mexp="${n}">${esc(nombre)}</span></div><div class="v mono" style="color:${saldo>0?'var(--clay)':'var(--court)'};font-weight:800">${saldo>0?gs(saldo):'✓ saldado'}</div></div>
+        <div class="grid3">
+          <div class="stat"><div class="k">Debe</div><div class="v mono">${gs(deuda)}</div></div>
+          <div class="stat"><div class="k">Pagado</div><div class="v mono" style="color:var(--court)">${gs(pagado)}</div></div>
+          <div class="stat saldo ${saldo<=0?'ok':''}"><div class="k">Saldo</div><div class="v mono">${saldo<=0?'✓':gs(saldo)}</div></div>
         </div>
-        <div class="aactions">
-          <button class="btn danger" data-morrm="${n}">✓ Pagó / quitar</button>
-          ${tel?`<button class="btn wa" data-morwa="${n}">💬 Recordar</button>`:''}
+        <span class="expand" data-mexp="${n}">⚙️ Cargar pago / historial ▾</span>
+        <div class="adetail">
+          ${cargos.length?`<div class="ajustes" style="margin-bottom:6px"><b style="color:var(--clay)">Cargos:</b> ${cargos.map(c=>`<div style="margin-top:2px">📌 ${c.fecha?fechaCorta(c.fecha):'-'} · Gs.${gs(c.monto)} · ${esc(c.concepto||'')}</div>`).join('')}</div>`:`<div class="field" style="margin-bottom:6px"><label>Deuda total Gs.</label><input type="number" inputmode="numeric" value="${m.monto||''}" data-mor="${n}"></div>`}
+          <div class="field-row">
+            <div class="field"><label>Pago Gs.</label><input type="number" inputmode="numeric" placeholder="0" data-mpago="${n}"></div>
+            <div class="field"><label>Fecha</label><input type="date" value="${hoyISO()}" data-mfecha="${n}"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Método</label><select data-mmetodo="${n}"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>QR</option><option>Otro</option></select></div>
+            <div class="field"><label>Nota</label><input data-mnota="${n}" placeholder="Ej: Itaú, lo trajo el padre…"></div>
+          </div>
+          <div class="aactions"><button class="btn pay" data-maddpago="${n}">+ Registrar pago</button></div>
+          ${pagos.length?`<div class="ajustes"><b style="color:var(--court)">Pagos:</b> ${pagos.map((p,pi)=>`<div style="margin-top:2px">📅 ${p.fecha?fechaCorta(p.fecha):'-'} · Gs.${gs(p.monto)} · ${esc(p.metodo||'-')}${p.nota?' · '+esc(p.nota):''} <span data-mrmpago="${n}|${pi}" style="color:var(--red);cursor:pointer">✕</span></div>`).join('')}</div>`:''}
+          <div class="aactions">
+            <button class="btn danger" data-morrm="${n}">Quitar de morosos</button>
+            ${tel?`<button class="btn wa" data-morwa="${n}">💬 Recordar</button>`:''}
+          </div>
         </div>
       </div>`;
-    }).join('') : '<div class="empty"><h3>Sin morosos</h3><p>Importá las deudas de la planilla o agregá manualmente.</p></div>');
+    }).join('') : '<div class="empty"><h3>Sin morosos</h3><p>Importá las deudas de la planilla, generá cuentas desde Cobros, o agregá manualmente.</p></div>');
 
   document.getElementById('btnAddMor').onclick=()=>{ document.getElementById('addMorSearch').value=''; document.getElementById('addMorMonto').value=''; document.getElementById('ovAddMor').classList.add('show'); };
-  el.querySelectorAll('[data-mor]').forEach(inp=>inp.onchange=()=>{ const n=inp.dataset.mor; state.morosos[n].monto=parseNum(inp.value); save(); renderMorosos(); });
-  el.querySelectorAll('[data-mornota]').forEach(inp=>inp.onchange=()=>{ state.morosos[inp.dataset.mornota].nota=inp.value; save(); });
-  el.querySelectorAll('[data-morrm]').forEach(b=>b.onclick=()=>{ if(confirm('¿Quitar de morosos? (pagó su deuda)')){ delete state.morosos[b.dataset.morrm]; save(); renderMorosos(); } });
-  el.querySelectorAll('[data-morwa]').forEach(b=>b.onclick=()=>{ const n=b.dataset.morwa; const a=state.alumnos.find(x=>normName(x.nombre)===n); if(a) enviarWAMoroso(a, state.morosos[n].monto); });
+  el.querySelectorAll('[data-mexp]').forEach(s=>s.onclick=()=>el.querySelector(`[data-mcard="${s.dataset.mexp}"]`).classList.toggle('open'));
+  el.querySelectorAll('[data-mor]').forEach(inp=>inp.onchange=()=>{ state.morosos[inp.dataset.mor].monto=parseNum(inp.value); save(); renderMorososKeep(inp.dataset.mor); });
+  el.querySelectorAll('[data-maddpago]').forEach(b=>b.onclick=()=>{ const n=b.dataset.maddpago; const monto=parseNum(el.querySelector(`[data-mpago="${n}"]`).value); if(monto<=0) return; const fecha=el.querySelector(`[data-mfecha="${n}"]`).value||hoyISO(); const metodo=el.querySelector(`[data-mmetodo="${n}"]`).value; const nota=(el.querySelector(`[data-mnota="${n}"]`).value||'').trim(); if(!state.morosos[n].pagos) state.morosos[n].pagos=[]; state.morosos[n].pagos.push({monto,fecha,metodo,nota}); 
+    // si quedó saldado, avisar
+    const sal=morSaldo(state.morosos[n]); save(); if(sal<=0){ if(confirm('🎉 '+(state.alumnos.find(x=>normName(x.nombre)===n)?.nombre||n)+' saldó su deuda. ¿Quitarlo de morosos?')){ delete state.morosos[n]; save(); renderMorosos(); return; } } renderMorososKeep(n); });
+  el.querySelectorAll('[data-mrmpago]').forEach(s=>s.onclick=()=>{ const [n,pi]=s.dataset.mrmpago.split('|'); state.morosos[n].pagos.splice(+pi,1); save(); renderMorososKeep(n); });
+  el.querySelectorAll('[data-morrm]').forEach(b=>b.onclick=()=>{ if(confirm('¿Quitar de morosos?')){ delete state.morosos[b.dataset.morrm]; save(); renderMorosos(); } });
+  el.querySelectorAll('[data-morwa]').forEach(b=>b.onclick=()=>{ const n=b.dataset.morwa; const a=state.alumnos.find(x=>normName(x.nombre)===n); const saldo=morSaldo(state.morosos[n]); if(a) enviarWAMoroso(a, saldo); });
 }
+function renderMorososKeep(n){ renderMorosos(); const c=document.querySelector(`[data-mcard="${n}"]`); if(c) c.classList.add('open'); }
 
 // ===== render HORARIOS =====
 const ORDEN_DIAS=['LUN','MAR','MIÉ','JUE','VIE','SÁB'];
