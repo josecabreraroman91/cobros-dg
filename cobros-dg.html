@@ -245,6 +245,7 @@ function generarFechas(a,y,m){
 }
 function fmtFecha(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fechaCorta(iso){ const p=iso.split('-'); return parseInt(p[2])+'/'+parseInt(p[1]); }
+function hoyISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
 function mesData(a, y, m){
   const k=periodoKey(y,m), n=normName(a.nombre);
@@ -422,10 +423,14 @@ function render(){
           <div class="field"><label>Registrar pago Gs.</label><input type="number" inputmode="numeric" placeholder="0" data-pago="${idx}"></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Método</label><select data-metodo="${idx}"><option>EFE</option><option>Transferencia</option><option>QR</option><option>Otro</option></select></div>
+          <div class="field"><label>Fecha del pago</label><input type="date" value="${hoyISO()}" data-fechapago="${idx}"></div>
+          <div class="field"><label>Método</label><select data-metodo="${idx}"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>QR</option><option>Otro</option></select></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Nota (opcional)</label><input data-notapago="${idx}" placeholder="Ej: transferencia Itaú, lo trajo el padre…"></div>
           <button class="btn pay" data-addpago="${idx}" style="align-self:flex-end;height:42px;flex:0 0 auto;padding:0 16px">+ Pago</button>
         </div>
-        ${pagos.length?`<div class="ajustes">Pagos: ${pagos.map(p=>`Gs.${gs(p.monto)} (${p.metodo||'-'}) <span data-rmpago="${idx}|${pagos.indexOf(p)}" style="color:var(--red);cursor:pointer">✕</span>`).join(' · ')}</div>`:''}
+        ${pagos.length?`<div class="ajustes">Historial: ${pagos.map(p=>`<div style="margin-top:3px">📅 ${p.fecha?fechaCorta(p.fecha):'-'} · Gs.${gs(p.monto)} · ${esc(p.metodo||'-')}${p.nota?' · '+esc(p.nota):''} <span data-rmpago="${idx}|${pagos.indexOf(p)}" style="color:var(--red);cursor:pointer">✕</span></div>`).join('')}</div>`:''}
         <div class="aactions">
           <button class="btn pay" data-pagartodo="${idx}">Pagar saldo</button>
           <button class="btn comp" data-comp="${idx}">🧾 Resumen</button>
@@ -448,8 +453,8 @@ function wireCobros(el){
   el.querySelectorAll('[data-rmf]').forEach(s=>s.onclick=(e)=>{ e.stopPropagation(); const [i,fi]=s.dataset.rmf.split('|').map(Number); const a=state.alumnos[i]; const md=mesData(a,curY,curM); const f=md.fechas[fi]; md.fechas.splice(fi,1); delete md.fue[f]; delete md.horas[f]; save(); render(); reopen(i); });
   el.querySelectorAll('[data-addf]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.addf; const a=state.alumnos[i]; const dia=prompt('¿Qué día agregar? (número del día del mes, ej: 15)'); const d=parseInt(dia); if(!d||d<1||d>31) return; const iso=periodoKey(curY,curM).split('-')[0]+'-'+String(curM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const md=mesData(a,curY,curM); if(!md.fechas.includes(iso)){ md.fechas.push(iso); md.fechas.sort(); } save(); render(); reopen(i); });
   el.querySelectorAll('[data-precio]').forEach(inp=>inp.onchange=()=>{ const i=+inp.dataset.precio; const md=mesData(state.alumnos[i],curY,curM); md.precio=inp.value===''?null:parseNum(inp.value); save(); render(); reopen(i); });
-  el.querySelectorAll('[data-addpago]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.addpago; const inp=el.querySelector(`[data-pago="${i}"]`); const met=el.querySelector(`[data-metodo="${i}"]`).value; const m=parseNum(inp.value); if(m>0){ mesData(state.alumnos[i],curY,curM).pagos.push({monto:m,metodo:met,fecha:new Date().toISOString().slice(0,10)}); save(); render(); reopen(i); } });
-  el.querySelectorAll('[data-pagartodo]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.pagartodo; const c=calc(state.alumnos[i]); if(c.saldo>0){ mesData(state.alumnos[i],curY,curM).pagos.push({monto:c.saldo,metodo:'EFE',fecha:new Date().toISOString().slice(0,10)}); save(); render(); reopen(i); } });
+  el.querySelectorAll('[data-addpago]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.addpago; const inp=el.querySelector(`[data-pago="${i}"]`); const met=el.querySelector(`[data-metodo="${i}"]`).value; const fp=el.querySelector(`[data-fechapago="${i}"]`).value||hoyISO(); const nota=(el.querySelector(`[data-notapago="${i}"]`).value||'').trim(); const m=parseNum(inp.value); if(m>0){ mesData(state.alumnos[i],curY,curM).pagos.push({monto:m,metodo:met,nota,fecha:fp}); save(); render(); reopen(i); } });
+  el.querySelectorAll('[data-pagartodo]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.pagartodo; const c=calc(state.alumnos[i]); if(c.saldo>0){ mesData(state.alumnos[i],curY,curM).pagos.push({monto:c.saldo,metodo:'Efectivo',nota:'',fecha:hoyISO()}); save(); render(); reopen(i); } });
   el.querySelectorAll('[data-rmpago]').forEach(s=>s.onclick=()=>{ const [i,pi]=s.dataset.rmpago.split('|').map(Number); mesData(state.alumnos[i],curY,curM).pagos.splice(pi,1); save(); render(); reopen(i); });
   el.querySelectorAll('[data-comp]').forEach(b=>b.onclick=()=>openComp(+b.dataset.comp));
   el.querySelectorAll('[data-wa]').forEach(b=>b.onclick=()=>enviarWA(+b.dataset.wa));
