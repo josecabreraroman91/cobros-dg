@@ -7,122 +7,105 @@
 <style>
   :root{
     --bg:#13171c; --panel:#1b2128; --panel2:#222a33; --line:#2c3540; --txt:#e9edf2; --muted:#8b97a8;
-    --clay:#d97a4e;        /* deuda / acento (tierra batida) */
-    --court:#3fb27f;       /* cobrado / ok (verde cancha) */
-    --gold:#e8b34a;        /* parcial */
+    --clay:#d97a4e; --court:#3fb27f; --gold:#e8b34a;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
-  .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .mono{font-variant-numeric:tabular-nums}
 
   header{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:12px}
   .title{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;letter-spacing:-.3px}
   .title .dot{width:10px;height:10px;border-radius:50%;background:var(--clay)}
-  .title small{color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0}
-
-  .monthbar{display:flex;align-items:center;gap:8px;margin-top:10px}
-  .monthbar .mlabel{flex:1;text-align:center;font-weight:700;font-size:15px}
-  .iconbtn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);width:38px;height:38px;border-radius:10px;font-size:18px;cursor:pointer}
-  .iconbtn:hover{border-color:var(--clay)}
+  .title small{color:var(--muted);font-weight:500;font-size:11px}
 
   .totals{display:flex;gap:8px;margin-top:10px}
   .tcard{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
   .tcard .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-  .tcard .v{font-size:16px;font-weight:800;margin-top:2px}
-  .tcard.cobrar .v{color:var(--txt)}
+  .tcard .v{font-size:15px;font-weight:800;margin-top:2px}
+  .tcard.deuda .v{color:var(--clay)}
   .tcard.cobrado .v{color:var(--court)}
-  .tcard.pend .v{color:var(--clay)}
+  .tcard.aldia .v{color:var(--court)}
 
   .toolbar{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
   .btn{padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:13px;font-weight:600;cursor:pointer}
   .btn.primary{background:var(--clay);border-color:var(--clay);color:#1a1206}
-  .btn.ghost{background:transparent}
-  .search{flex:1;min-width:160px;position:relative}
+  .search{flex:1;min-width:160px}
   .search input{width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:14px}
-  .filters{display:flex;gap:6px;margin-top:8px}
-  .chip{padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer}
+  .filters{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
+  .chip{padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
   .chip.active{background:var(--txt);color:#111;border-color:var(--txt)}
+  .chip.active.deuda{background:var(--clay);color:#1a1206;border-color:var(--clay)}
 
   main{padding:12px;padding-bottom:60px}
   .empty{text-align:center;color:var(--muted);padding:50px 16px}
   .empty h3{color:var(--txt);margin-bottom:6px}
 
-  /* tarjeta de alumno */
   .acard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
-  .acard.pagado{border-color:#244b3a}
+  .acard.aldia{border-color:#244b3a}
   .acard.deuda{border-left:3px solid var(--clay)}
   .arow1{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
   .aname{font-weight:700;font-size:15px}
   .acat{font-size:11px;color:var(--muted);font-weight:600;background:var(--panel2);padding:2px 7px;border-radius:6px;margin-left:6px}
-  .adays{display:flex;gap:4px;margin-top:7px;flex-wrap:wrap}
-  .day{font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:var(--panel2);color:var(--muted)}
-  .day.on{background:#26343f;color:#bcd6ef}
-  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
   .stat{background:var(--panel2);border-radius:9px;padding:7px 9px}
   .stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-  .stat .v{font-size:15px;font-weight:800;margin-top:1px}
-  .stat.pend .v{color:var(--clay)}
-  .stat.pend.ok .v{color:var(--court)}
-  .acobro{display:flex;gap:8px;margin-top:10px;align-items:center}
-  .acobro label{font-size:11px;color:var(--muted)}
-  .acobro input{flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--txt);font-size:14px}
-  .aactions{display:flex;gap:6px;margin-top:8px}
-  .aactions .btn{flex:1;padding:9px;font-size:12px}
+  .stat .v{font-size:14px;font-weight:800;margin-top:1px}
+  .stat.saldo .v{color:var(--clay)}
+  .stat.saldo.ok .v{color:var(--court)}
+  .adetail{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;display:none}
+  .acard.open .adetail{display:block}
+  .field{margin-bottom:8px}
+  .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
+  .field input{width:100%;padding:9px 10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--txt);font-size:14px}
+  .field input:disabled{opacity:.6}
+  .field-row{display:flex;gap:8px}.field-row .field{flex:1}
+  .ajustes{font-size:11px;color:var(--muted);margin-top:2px}
+  .aactions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .aactions .btn{flex:1;padding:9px;font-size:12px;min-width:90px}
   .btn.pay{background:#1d3a2c;border-color:#2a5a42;color:#7df0aa}
   .btn.wa{background:#16361f;border-color:#25d366;color:#5ef08e}
   .btn.comp{background:#3a2a1a;border-color:#5a3a1a;color:#f0c389}
+  .expand{font-size:11px;color:var(--gold);cursor:pointer;margin-top:8px;display:inline-block}
 
-  /* overlay genérico */
   .overlay{position:fixed;inset:0;background:#000b;display:none;align-items:flex-end;justify-content:center;z-index:50}
   .overlay.show{display:flex}
   .sheet{background:var(--panel);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px;max-height:90vh;overflow:auto}
   .sheet h3{margin-bottom:10px;font-size:16px}
-  .field{margin-bottom:10px}
-  .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
-  .field input,.field select{width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:14px}
-  .field-row{display:flex;gap:8px}.field-row .field{flex:1}
+  .sheet .field input{width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:14px}
   .sheet-actions{display:flex;gap:8px;margin-top:8px}.sheet-actions .btn{flex:1;padding:11px}
   .status{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
 
-  /* comprobante */
   #compWrap{display:flex;flex-direction:column;align-items:center;gap:12px}
   #compCanvas{width:100%;max-width:380px;border-radius:12px;border:1px solid var(--line)}
-  .feriados-help{font-size:11px;color:var(--muted);margin-top:4px}
 </style>
 </head>
 <body>
 
 <header>
   <div class="title"><span class="dot"></span> Cobros · Academia DG <small>fase 2</small></div>
-  <div class="monthbar">
-    <button class="iconbtn" id="prevMonth">‹</button>
-    <div class="mlabel" id="monthLabel">—</div>
-    <button class="iconbtn" id="nextMonth">›</button>
-  </div>
   <div class="totals">
-    <div class="tcard cobrar"><div class="k">A cobrar</div><div class="v mono" id="tCobrar">—</div></div>
-    <div class="tcard cobrado"><div class="k">Cobrado</div><div class="v mono" id="tCobrado">—</div></div>
-    <div class="tcard pend"><div class="k">Pendiente</div><div class="v mono" id="tPend">—</div></div>
+    <div class="tcard deuda"><div class="k">Deuda total</div><div class="v mono" id="tDeuda">—</div></div>
+    <div class="tcard cobrado"><div class="k">Cobrado (mes)</div><div class="v mono" id="tCobrado">—</div></div>
+    <div class="tcard aldia"><div class="k">Al día</div><div class="v mono" id="tAldia">—</div></div>
   </div>
   <div class="toolbar">
     <div class="search"><input id="search" placeholder="Buscar alumno…"></div>
     <button class="btn" id="btnSync">🔄 Sincronizar</button>
-    <button class="btn ghost" id="btnFeriados">📅 Feriados</button>
   </div>
   <div class="filters">
     <button class="chip active" data-filter="todos">Todos</button>
     <button class="chip" data-filter="deuda">Con deuda</button>
-    <button class="chip" data-filter="pagados">Pagados</button>
+    <button class="chip" data-filter="aldia">Al día</button>
+    <button class="chip" data-filter="cobrados">Cobrados este mes</button>
   </div>
 </header>
 
 <main id="list"></main>
 
-<!-- Modal sincronizar -->
 <div class="overlay" id="ovSync">
   <div class="sheet">
     <h3>🔄 Sincronizar con la hoja ALUMNOS</h3>
-    <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Lee nombre, categoría, precio por clase, días que entrena y teléfono. El Sheet debe estar compartido como "cualquiera con el enlace".</p>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Lee de tu planilla: nombre, categoría, precio y el <b>pendiente (PENDT.)</b> ya calculado. El Sheet debe estar compartido como "cualquiera con el enlace".</p>
     <div class="field"><label>ID del Google Sheet</label><input id="fSheetId"></div>
     <div class="field"><label>Nombre de la hoja</label><input id="fSheetTab"></div>
     <div class="sheet-actions"><button class="btn primary" id="doSync">🔄 Sincronizar ahora</button></div>
@@ -131,26 +114,11 @@
   </div>
 </div>
 
-<!-- Modal feriados -->
-<div class="overlay" id="ovFeriados">
-  <div class="sheet">
-    <h3>📅 Feriados del mes</h3>
-    <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Los días que cargues acá se descuentan del cálculo de clases del mes que estás viendo.</p>
-    <div class="field-row">
-      <div class="field"><label>Agregar feriado (día del mes)</label><input id="fFeriadoDia" type="number" min="1" max="31" placeholder="Ej: 12"></div>
-      <button class="btn primary" id="addFeriado" style="align-self:flex-end;height:42px">Agregar</button>
-    </div>
-    <div id="feriadosList" style="margin:6px 0 10px"></div>
-    <div class="sheet-actions"><button class="btn" id="closeFeriados">Listo</button></div>
-  </div>
-</div>
-
-<!-- Modal comprobante -->
 <div class="overlay" id="ovComp">
   <div class="sheet">
     <h3>🧾 Comprobante</h3>
     <div id="compWrap">
-      <canvas id="compCanvas" width="760" height="980"></canvas>
+      <canvas id="compCanvas" width="760" height="900"></canvas>
       <div class="sheet-actions" style="width:100%;max-width:380px">
         <button class="btn comp" id="compDownload">⬇️ Descargar imagen</button>
         <button class="btn wa" id="compWA">💬 Enviar WhatsApp</button>
@@ -164,68 +132,39 @@
 const DEFAULT_SHEET_ID='1Ux1uQJ31EpxnWafAIJw0cuzS2B2vfuv--LUfDA4bVqc';
 const DEFAULT_SHEET_TAB='ALUMNOS';
 const MESES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
-const DIAS=[ // mapa día->getDay() (0=Dom..6=Sáb)
-  {key:'lunes',lbl:'LUN',gd:1},{key:'martes',lbl:'MAR',gd:2},{key:'miercoles',lbl:'MIÉ',gd:3},
-  {key:'jueves',lbl:'JUE',gd:4},{key:'viernes',lbl:'VIE',gd:5},{key:'sabado',lbl:'SÁB',gd:6}
-];
 
-let state={
-  sheetId:DEFAULT_SHEET_ID, sheetTab:DEFAULT_SHEET_TAB,
-  alumnos:[],            // [{nombre, cat, precio, tel, dias:{lunes:slots,...}}]
-  cobros:{},             // 'YYYY-M' -> { normName: monto }
-  feriados:{},           // 'YYYY-M' -> [dias]
-  info:''
-};
-let curY=new Date().getFullYear(), curM=new Date().getMonth(); // 0-based
+let state={ sheetId:DEFAULT_SHEET_ID, sheetTab:DEFAULT_SHEET_TAB, alumnos:[], registro:{}, info:'' };
 let filter='todos', query='';
+const MES_ACTUAL=new Date().getMonth(), ANIO_ACTUAL=new Date().getFullYear();
+const periodo=ANIO_ACTUAL+'-'+MES_ACTUAL;
 
-function save(){ localStorage.setItem('cobros_dg', JSON.stringify(state)); }
+function save(){ localStorage.setItem('cobros_dg_v2', JSON.stringify(state)); }
 function load(){
-  const s=localStorage.getItem('cobros_dg');
+  const s=localStorage.getItem('cobros_dg_v2');
   if(s){ try{ state=JSON.parse(s); }catch(e){} }
   if(!state.sheetId) state.sheetId=DEFAULT_SHEET_ID;
   if(!state.sheetTab) state.sheetTab=DEFAULT_SHEET_TAB;
   if(!state.alumnos) state.alumnos=[];
-  if(!state.cobros) state.cobros={};
-  if(!state.feriados) state.feriados={};
+  if(!state.registro) state.registro={};
 }
-
-// ===== utilidades =====
 function normName(s){ return String(s==null?'':s).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' '); }
-function gs(n){ // formato guaraníes 1.100.000
-  n=Math.round(Number(n)||0);
-  return n.toLocaleString('es-PY').replace(/,/g,'.');
+function gs(n){ n=Math.round(Number(n)||0); return n.toLocaleString('es-PY').replace(/,/g,'.'); }
+function parseNum(v){ let s=String(v==null?'':v).replace(/[^\d-]/g,''); const n=parseInt(s,10); return isNaN(n)?0:n; }
+
+function reg(nombre){
+  const k=normName(nombre);
+  if(!state.registro[k]) state.registro[k]={ajuste:0,ajusteNota:'',pagos:[]};
+  if(!state.registro[k].pagos) state.registro[k].pagos=[];
+  return state.registro[k];
 }
-function monthKey(){ return curY+'-'+curM; }
-function parseNum(v){ const s=String(v==null?'':v).replace(/[^\d.-]/g,''); const n=parseFloat(s); return isNaN(n)?0:n; }
-function countSlots(v){ // "14:00" ->1 ; "14:00, 16:00" ->2 ; "-"/"" ->0
-  if(v==null) return 0; const s=String(v).trim();
-  if(!s||s==='-') return 0;
-  return s.split(',').map(x=>x.trim()).filter(Boolean).length;
+function pagadoMes(nombre){ return reg(nombre).pagos.filter(p=>p.periodo===periodo).reduce((s,p)=>s+(p.monto||0),0); }
+function calc(a){
+  const r=reg(a.nombre); const ajuste=r.ajuste||0; const pagado=pagadoMes(a.nombre);
+  const aCobrar=(a.pendiente||0)+ajuste;
+  const saldo=Math.max(0, aCobrar - pagado);
+  return {ajuste, pagado, aCobrar, saldo, tieneDeuda:(aCobrar-pagado)>0};
 }
 
-// veces que cae cada weekday en el mes actual, menos feriados
-function weekdayCounts(){
-  const counts=[0,0,0,0,0,0,0];
-  const feriados=state.feriados[monthKey()]||[];
-  const d=new Date(curY,curM,1);
-  while(d.getMonth()===curM){
-    if(!feriados.includes(d.getDate())) counts[d.getDay()]++;
-    d.setDate(d.getDate()+1);
-  }
-  return counts;
-}
-
-function calcAlumno(a){
-  const wc=weekdayCounts();
-  let nclase=0;
-  DIAS.forEach(d=>{ const slots=a.dias[d.key]||0; if(slots) nclase += slots*wc[d.gd]; });
-  const mensual=nclase*(a.precio||0);
-  const cobrado=(state.cobros[monthKey()]||{})[normName(a.nombre)]||0;
-  return {nclase, mensual, cobrado, pendiente:Math.max(0,mensual-cobrado), saldado: mensual>0 && cobrado>=mensual};
-}
-
-// ===== sincronización (gviz CSV) =====
 let _rows=null,_headers=null;
 function parseCSV(text){
   const rows=[];let row=[],cur='',q=false;
@@ -236,7 +175,8 @@ function parseCSV(text){
   if(cur!==''||row.length){row.push(cur);rows.push(row);}
   return rows;
 }
-function findCol(headers,opts){ const H=headers.map(h=>normName(h)); for(const o of opts){ const i=H.findIndex(h=>h.indexOf(o)>-1); if(i>-1) return i; } return -1; }
+function findCol(h,opts){ const H=h.map(x=>normName(x)); for(const o of opts){ const i=H.findIndex(z=>z.indexOf(o)>-1); if(i>-1) return i; } return -1; }
+function findExact(h,opts){ const H=h.map(x=>normName(x)); for(const o of opts){ const i=H.findIndex(z=>z===o); if(i>-1) return i; } return -1; }
 
 async function sync(){
   const st=document.getElementById('syncStatus');
@@ -249,253 +189,159 @@ async function sync(){
     const res=await fetch(url); if(!res.ok) throw new Error('HTTP '+res.status);
     const rows=parseCSV(await res.text());
     if(rows.length<2) throw new Error('hoja vacía');
-    // Detectar la fila de encabezados: la que tenga "alumno" o "nombre"
-    // (más una segunda señal: precio, telefono, categoria, lado o algún día)
     let hr=-1;
     for(let r=0;r<Math.min(rows.length,12);r++){
       const hh=rows[r].map(x=>normName(x));
-      const tieneNombre=hh.some(h=>h==='alumnos'||h==='alumno'||h.indexOf('nombre')>-1);
-      const otraSenal=hh.some(h=>h.indexOf('precio')>-1||h.indexOf('telefono')>-1||h.indexOf('tel')>-1||
-                                 h.indexOf('categor')>-1||h.indexOf('ategor')>-1||h.indexOf('lado')>-1||
-                                 h==='lunes'||h==='martes'||h.indexOf('clase')>-1);
-      if(tieneNombre && otraSenal){ hr=r; break; }
+      if(hh.some(h=>h==='alumnos'||h==='alumno') && hh.some(h=>h.indexOf('precio')>-1||h.indexOf('telefono')>-1||h.indexOf('categor')>-1)){ hr=r; break; }
     }
-    if(hr<0){ // fallback: primera fila que contenga "alumno"/"nombre"
-      for(let r=0;r<Math.min(rows.length,12);r++){
-        if(rows[r].map(x=>normName(x)).some(h=>h.indexOf('alumno')>-1||h.indexOf('nombre')>-1)){ hr=r; break; }
-      }
-    }
+    if(hr<0) for(let r=0;r<Math.min(rows.length,12);r++){ if(rows[r].map(x=>normName(x)).some(h=>h.indexOf('alumno')>-1)){ hr=r; break; } }
     if(hr<0) hr=0;
     _headers=rows[hr];
-    // nombre: priorizar la columna "Alumnos" (nombre completo)
-    let iNom=findCol(_headers,['alumnos','alumno']);
-    if(iNom<0) iNom=findCol(_headers,['nombre p/ horario','nombre']);
-    const iWpp=findCol(_headers,['nombre_calendario','nombre p/ horario','nombre p horario','nombre wpp']);
-    const iCat=findCol(_headers,['categor','ategor','cat']);
+    const iNom=findCol(_headers,['alumnos','alumno']);
+    const iCat=findCol(_headers,['categor','ategor']);
     const iPre=findCol(_headers,['precio']);
-    const iTel=findCol(_headers,['telefono','celular','whatsapp','tel']);
-    const iDia={};
-    DIAS.forEach(d=>{ iDia[d.key]=findCol(_headers,[d.key, d.lbl.toLowerCase()]); });
-    // los headers de días en la hoja son LUNES, MARTES... (sin tilde MIERCOLES)
-    iDia.miercoles = iDia.miercoles>-1?iDia.miercoles:findCol(_headers,['miercoles']);
-    if(iNom<0) throw new Error('no encontré la columna de nombre (revisá que la hoja tenga un encabezado "Alumnos")');
+    const iTel=findCol(_headers,['telefono','celular','whatsapp']);
+    let iPen=findExact(_headers,['pendt.','pendt','pendiente','pend.','pend']);
+    if(iPen<0) iPen=findCol(_headers,['pendt','pendiente']);
+    if(iNom<0) throw new Error('no encontré la columna "Alumnos"');
     const out=[];
     for(let r=hr+1;r<rows.length;r++){
       const nombre=(rows[r][iNom]||'').trim();
       if(!nombre) continue;
-      const dias={};
-      DIAS.forEach(d=>{ dias[d.key]= iDia[d.key]>-1 ? countSlots(rows[r][iDia[d.key]]) : 0; });
       out.push({
         nombre,
-        nombreWpp:(iWpp>-1?(rows[r][iWpp]||'').trim():''),
         cat:(iCat>-1?(rows[r][iCat]||'').trim():''),
         precio:(iPre>-1?parseNum(rows[r][iPre]):0),
-        tel:(iTel>-1?(rows[r][iTel]||'').trim():''),
-        dias
+        pendiente:(iPen>-1?parseNum(rows[r][iPen]):0),
+        tel:(iTel>-1?(rows[r][iTel]||'').trim():'')
       });
     }
     state.alumnos=out;
-    const conDias=out.filter(a=>Object.values(a.dias).some(v=>v>0)).length;
-    state.info='✅ '+out.length+' alumnos · '+conDias+' con días de entrenamiento cargados';
-    save();
-    st.textContent=state.info;
-    render();
+    const conDeuda=out.filter(a=>a.pendiente>0).length;
+    state.info='✅ '+out.length+' alumnos · '+conDeuda+' con deuda'+(iPen<0?' · ⚠️ no encontré la columna PENDT.':'');
+    save(); st.textContent=state.info; render();
   }catch(err){
     st.textContent='❌ No se pudo leer: '+err.message+'. Verificá el ID y que el Sheet esté compartido como "cualquiera con el enlace".';
   }
 }
 
-// ===== render =====
-function setMonth(delta){
-  curM+=delta;
-  if(curM<0){curM=11;curY--;} if(curM>11){curM=0;curY++;}
-  render();
-}
 function render(){
-  document.getElementById('monthLabel').textContent=MESES[curM]+' '+curY;
   const q=normName(query);
-  let lista=state.alumnos.map(a=>({a, c:calcAlumno(a)}));
-  // solo alumnos con clases este mes o con cobro registrado
-  lista=lista.filter(x=> x.c.mensual>0 || x.c.cobrado>0);
+  let lista=state.alumnos.map(a=>({a,c:calc(a)}));
   if(q) lista=lista.filter(x=>normName(x.a.nombre).indexOf(q)>-1);
-  if(filter==='deuda') lista=lista.filter(x=>x.c.pendiente>0);
-  if(filter==='pagados') lista=lista.filter(x=>x.c.saldado);
-  lista.sort((x,y)=> y.c.pendiente-x.c.pendiente || x.a.nombre.localeCompare(y.a.nombre));
+  if(filter==='deuda') lista=lista.filter(x=>x.c.tieneDeuda);
+  else if(filter==='aldia') lista=lista.filter(x=>!x.c.tieneDeuda && x.c.aCobrar>0);
+  else if(filter==='cobrados') lista=lista.filter(x=>x.c.pagado>0);
+  else lista=lista.filter(x=>x.c.aCobrar>0 || x.c.pagado>0);
+  lista.sort((x,y)=> y.c.saldo-x.c.saldo || x.a.nombre.localeCompare(y.a.nombre));
 
-  // totales (sobre todos los del mes, no filtrados)
-  let tc=0,tco=0,tp=0;
-  state.alumnos.forEach(a=>{ const c=calcAlumno(a); tc+=c.mensual; tco+=c.cobrado; tp+=c.pendiente; });
-  document.getElementById('tCobrar').textContent=gs(tc);
-  document.getElementById('tCobrado').textContent=gs(tco);
-  document.getElementById('tPend').textContent=gs(tp);
+  let tDeuda=0,tCobrado=0,nAldia=0;
+  state.alumnos.forEach(a=>{ const c=calc(a); tDeuda+=c.saldo; tCobrado+=c.pagado; if(c.aCobrar>0 && !c.tieneDeuda) nAldia++; });
+  document.getElementById('tDeuda').textContent=gs(tDeuda);
+  document.getElementById('tCobrado').textContent=gs(tCobrado);
+  document.getElementById('tAldia').textContent=nAldia;
 
   const el=document.getElementById('list');
-  if(!state.alumnos.length){ el.innerHTML='<div class="empty"><h3>Sin datos todavía</h3><p>Tocá 🔄 Sincronizar para traer los alumnos de la hoja ALUMNOS.</p></div>'; return; }
-  if(!lista.length){ el.innerHTML='<div class="empty"><h3>Nada para mostrar</h3><p>No hay alumnos con clases en '+MESES[curM]+' (o el filtro/búsqueda no encontró nada).</p></div>'; return; }
+  if(!state.alumnos.length){ el.innerHTML='<div class="empty"><h3>Sin datos todavía</h3><p>Tocá 🔄 Sincronizar para traer los alumnos y sus pendientes.</p></div>'; return; }
+  if(!lista.length){ el.innerHTML='<div class="empty"><h3>Nada para mostrar</h3><p>Probá otro filtro o revisá la búsqueda.</p></div>'; return; }
 
   el.innerHTML=lista.map(({a,c})=>{
-    const idx=state.alumnos.indexOf(a);
-    const diasH=DIAS.map(d=>`<span class="day${a.dias[d.key]?' on':''}">${d.lbl}${a.dias[d.key]>1?'×'+a.dias[d.key]:''}</span>`).join('');
-    return `<div class="acard ${c.saldado?'pagado':(c.pendiente>0?'deuda':'')}">
+    const idx=state.alumnos.indexOf(a); const r=reg(a.nombre);
+    const pagosMes=r.pagos.filter(p=>p.periodo===periodo);
+    return `<div class="acard ${c.tieneDeuda?'deuda':(c.aCobrar>0?'aldia':'')}" data-card="${idx}">
       <div class="arow1"><div><span class="aname">${esc(a.nombre)}</span>${a.cat?`<span class="acat">Cat ${esc(a.cat)}</span>`:''}</div></div>
-      <div class="adays">${diasH}</div>
-      <div class="grid2">
-        <div class="stat"><div class="k">Clases ${MESES[curM].slice(0,3)}</div><div class="v mono">${c.nclase}</div></div>
-        <div class="stat"><div class="k">Total mes</div><div class="v mono">${gs(c.mensual)}</div></div>
-        <div class="stat"><div class="k">Cobrado</div><div class="v mono">${gs(c.cobrado)}</div></div>
-        <div class="stat pend ${c.pendiente<=0?'ok':''}"><div class="k">${c.pendiente<=0?'Saldado':'Pendiente'}</div><div class="v mono">${c.pendiente<=0?'✓':gs(c.pendiente)}</div></div>
+      <div class="grid3">
+        <div class="stat"><div class="k">A cobrar</div><div class="v mono">${gs(c.aCobrar)}</div></div>
+        <div class="stat"><div class="k">Pagado mes</div><div class="v mono">${gs(c.pagado)}</div></div>
+        <div class="stat saldo ${c.saldo<=0?'ok':''}"><div class="k">${c.saldo<=0?'Al día':'Saldo'}</div><div class="v mono">${c.saldo<=0?'✓':gs(c.saldo)}</div></div>
       </div>
-      <div class="acobro">
-        <label>Cobrado Gs.</label>
-        <input type="number" inputmode="numeric" value="${c.cobrado||''}" placeholder="0" data-cobro="${idx}">
-      </div>
-      <div class="aactions">
-        <button class="btn pay" data-pay="${idx}">Marcar pagado</button>
-        <button class="btn comp" data-comp="${idx}">🧾 Comprobante</button>
-        ${a.tel?`<button class="btn wa" data-wa="${idx}">💬</button>`:''}
+      <span class="expand" data-exp="${idx}">⚙️ Ajustar / registrar pago ▾</span>
+      <div class="adetail">
+        <div class="field-row">
+          <div class="field"><label>Precio base (planilla)</label><input class="mono" value="${gs(a.pendiente)}" disabled></div>
+          <div class="field"><label>Ajuste (+/−)</label><input type="number" inputmode="numeric" value="${r.ajuste||''}" placeholder="0" data-ajuste="${idx}"></div>
+        </div>
+        <div class="field"><label>Nota del ajuste (ej: clase extra / faltó)</label><input value="${esc(r.ajusteNota||'')}" placeholder="Opcional" data-ajustenota="${idx}"></div>
+        <div class="field-row">
+          <div class="field"><label>Registrar pago Gs.</label><input type="number" inputmode="numeric" placeholder="0" data-pago="${idx}"></div>
+          <button class="btn pay" data-addpago="${idx}" style="align-self:flex-end;height:42px;flex:0 0 auto;padding:0 16px">+ Pago</button>
+        </div>
+        ${pagosMes.length?`<div class="ajustes">Pagos de ${MESES[MES_ACTUAL]}: ${pagosMes.map(p=>`Gs.${gs(p.monto)} <span data-rmpago="${idx}|${r.pagos.indexOf(p)}" style="color:#ff8a8a;cursor:pointer">✕</span>`).join(' · ')}</div>`:''}
+        <div class="aactions">
+          <button class="btn pay" data-pagartodo="${idx}">Pagar todo</button>
+          <button class="btn comp" data-comp="${idx}">🧾 Comprobante</button>
+          ${a.tel?`<button class="btn wa" data-wa="${idx}">💬</button>`:''}
+        </div>
       </div>
     </div>`;
   }).join('');
 
-  // listeners
-  el.querySelectorAll('[data-cobro]').forEach(inp=>{
-    inp.onchange=()=>{ setCobro(+inp.dataset.cobro, parseNum(inp.value)); };
-  });
-  el.querySelectorAll('[data-pay]').forEach(b=>{
-    b.onclick=()=>{ const a=state.alumnos[+b.dataset.pay]; const c=calcAlumno(a); setCobro(+b.dataset.pay, c.mensual); };
-  });
-  el.querySelectorAll('[data-comp]').forEach(b=>{ b.onclick=()=>openComprobante(+b.dataset.comp); });
+  el.querySelectorAll('[data-exp]').forEach(s=>{ s.onclick=()=>{ el.querySelector(`[data-card="${s.dataset.exp}"]`).classList.toggle('open'); }; });
+  el.querySelectorAll('[data-ajuste]').forEach(inp=>{ inp.onchange=()=>{ reg(state.alumnos[+inp.dataset.ajuste].nombre).ajuste=parseNum(inp.value); save(); render(); reopen(+inp.dataset.ajuste); }; });
+  el.querySelectorAll('[data-ajustenota]').forEach(inp=>{ inp.onchange=()=>{ reg(state.alumnos[+inp.dataset.ajustenota].nombre).ajusteNota=inp.value; save(); }; });
+  el.querySelectorAll('[data-addpago]').forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.addpago; const inp=el.querySelector(`[data-pago="${i}"]`); const m=parseNum(inp.value); if(m>0){ reg(state.alumnos[i].nombre).pagos.push({monto:m,periodo,fecha:new Date().toISOString().slice(0,10)}); save(); render(); reopen(i); } }; });
+  el.querySelectorAll('[data-pagartodo]').forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.pagartodo; const c=calc(state.alumnos[i]); if(c.saldo>0){ reg(state.alumnos[i].nombre).pagos.push({monto:c.saldo,periodo,fecha:new Date().toISOString().slice(0,10)}); save(); render(); reopen(i); } }; });
+  el.querySelectorAll('[data-rmpago]').forEach(s=>{ s.onclick=()=>{ const [i,pi]=s.dataset.rmpago.split('|').map(Number); reg(state.alumnos[i].nombre).pagos.splice(pi,1); save(); render(); reopen(i); }; });
+  el.querySelectorAll('[data-comp]').forEach(b=>{ b.onclick=()=>openComp(+b.dataset.comp); });
   el.querySelectorAll('[data-wa]').forEach(b=>{ b.onclick=()=>enviarWA(+b.dataset.wa); });
 }
+function reopen(idx){ const c=document.querySelector(`[data-card="${idx}"]`); if(c) c.classList.add('open'); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function setCobro(idx, monto){
-  const a=state.alumnos[idx];
-  if(!state.cobros[monthKey()]) state.cobros[monthKey()]={};
-  if(monto>0) state.cobros[monthKey()][normName(a.nombre)]=monto;
-  else delete state.cobros[monthKey()][normName(a.nombre)];
-  save(); render();
-}
-
-// ===== WhatsApp =====
 function normPhone(raw){ let d=String(raw||'').replace(/\D/g,''); if(!d) return ''; if(d.indexOf('595')===0) return d; if(d.charAt(0)==='0') d=d.slice(1); return d.length<=10?'595'+d:d; }
 function msgCobro(a,c){
   return `Hola ${a.nombre}! 👋\n\n`+
-    `Te paso el resumen de *${MESES[curM]} ${curY}* en Academia DG:\n`+
-    `🎾 Clases del mes: ${c.nclase}\n`+
-    `💵 Total: Gs. ${gs(c.mensual)}\n`+
-    (c.cobrado>0?`✅ Pagado: Gs. ${gs(c.cobrado)}\n`:'')+
-    (c.pendiente>0?`⚠️ Pendiente: Gs. ${gs(c.pendiente)}\n`:`✅ ¡Al día! Gracias 🙌\n`);
+    `Te paso tu estado de cuenta en Academia DG:\n`+
+    `💵 A cobrar: Gs. ${gs(c.aCobrar)}\n`+
+    (c.pagado>0?`✅ Pagado: Gs. ${gs(c.pagado)}\n`:'')+
+    (c.saldo>0?`⚠️ Saldo pendiente: Gs. ${gs(c.saldo)}\n`:`✅ ¡Estás al día! Gracias 🙌\n`);
 }
 function enviarWA(idx){
   const a=state.alumnos[idx]; const tel=normPhone(a.tel);
   if(!tel){ alert('Ese alumno no tiene teléfono en la hoja.'); return; }
-  const c=calcAlumno(a);
-  window.open('https://web.whatsapp.com/send?phone='+tel+'&text='+encodeURIComponent(msgCobro(a,c)), 'waCobros');
+  window.open('https://web.whatsapp.com/send?phone='+tel+'&text='+encodeURIComponent(msgCobro(a,calc(a))), 'waCobros');
 }
 
-// ===== Comprobante (canvas -> imagen) =====
 let compIdx=null;
-function openComprobante(idx){
-  compIdx=idx;
-  drawComprobante(idx);
-  document.getElementById('ovComp').classList.add('show');
-}
-function drawComprobante(idx){
-  const a=state.alumnos[idx]; const c=calcAlumno(a);
-  const cv=document.getElementById('compCanvas'); const x=cv.getContext('2d');
-  const W=cv.width, H=cv.height;
-  // fondo
+function openComp(idx){ compIdx=idx; drawComp(idx); document.getElementById('ovComp').classList.add('show'); }
+function drawComp(idx){
+  const a=state.alumnos[idx], c=calc(a);
+  const cv=document.getElementById('compCanvas'), x=cv.getContext('2d'); const W=cv.width,H=cv.height;
   x.fillStyle='#1b2128'; x.fillRect(0,0,W,H);
-  // barra superior clay
   x.fillStyle='#d97a4e'; x.fillRect(0,0,W,16);
-  // encabezado
   x.fillStyle='#e9edf2'; x.textAlign='left';
-  x.font='800 46px -apple-system,Segoe UI,sans-serif';
-  x.fillText('Academia DG', 50, 100);
-  x.fillStyle='#8b97a8'; x.font='600 26px -apple-system,Segoe UI,sans-serif';
-  x.fillText('Comprobante de cuota mensual', 50, 140);
-  // línea
+  x.font='800 46px -apple-system,Segoe UI,sans-serif'; x.fillText('Academia DG',50,100);
+  x.fillStyle='#8b97a8'; x.font='600 26px -apple-system,Segoe UI,sans-serif'; x.fillText('Estado de cuenta',50,140);
   x.strokeStyle='#2c3540'; x.lineWidth=2; x.beginPath(); x.moveTo(50,170); x.lineTo(W-50,170); x.stroke();
-  // alumno
-  x.fillStyle='#8b97a8'; x.font='600 22px -apple-system,Segoe UI,sans-serif'; x.fillText('ALUMNO', 50, 220);
-  x.fillStyle='#e9edf2'; x.font='800 40px -apple-system,Segoe UI,sans-serif'; x.fillText(a.nombre, 50, 262);
-  x.fillStyle='#8b97a8'; x.font='600 24px -apple-system,Segoe UI,sans-serif';
-  x.fillText('Periodo: '+MESES[curM]+' '+curY+(a.cat?('   ·   Categoría '+a.cat):''), 50, 300);
-
-  // filas de detalle
-  const rows=[
-    ['Clases del mes', String(c.nclase)],
-    ['Precio por clase', 'Gs. '+gs(a.precio)],
-    ['Total del mes', 'Gs. '+gs(c.mensual)],
-    ['Cobrado', 'Gs. '+gs(c.cobrado)]
-  ];
+  x.fillStyle='#8b97a8'; x.font='600 22px -apple-system,Segoe UI,sans-serif'; x.fillText('ALUMNO',50,220);
+  x.fillStyle='#e9edf2'; x.font='800 40px -apple-system,Segoe UI,sans-serif'; x.fillText(a.nombre,50,262);
+  x.fillStyle='#8b97a8'; x.font='600 24px -apple-system,Segoe UI,sans-serif'; x.fillText(MESES[MES_ACTUAL]+' '+ANIO_ACTUAL+(a.cat?('   ·   Cat '+a.cat):''),50,300);
+  const rows=[['A cobrar','Gs. '+gs(c.aCobrar)],['Pagado','Gs. '+gs(c.pagado)]];
   let y=370;
-  rows.forEach(r=>{
-    x.fillStyle='#222a33'; roundRect(x,50,y-34,W-100,52,10); x.fill();
-    x.fillStyle='#8b97a8'; x.font='600 26px -apple-system,Segoe UI,sans-serif'; x.textAlign='left'; x.fillText(r[0], 70, y);
-    x.fillStyle='#e9edf2'; x.font='800 28px -apple-system,Segoe UI,sans-serif'; x.textAlign='right'; x.fillText(r[1], W-70, y);
-    y+=66;
-  });
-  // pendiente destacado
-  const ok=c.pendiente<=0;
-  x.fillStyle= ok?'#173d2c':'#3a2118'; roundRect(x,50,y-34,W-100,70,12); x.fill();
-  x.fillStyle= ok?'#3fb27f':'#d97a4e'; x.font='800 30px -apple-system,Segoe UI,sans-serif'; x.textAlign='left';
-  x.fillText(ok?'AL DÍA':'PENDIENTE', 70, y+12);
-  x.font='800 36px -apple-system,Segoe UI,sans-serif'; x.textAlign='right';
-  x.fillText(ok?'✓':('Gs. '+gs(c.pendiente)), W-70, y+12);
-
-  // pie
+  rows.forEach(rw=>{ x.fillStyle='#222a33'; rr(x,50,y-34,W-100,52,10); x.fill();
+    x.fillStyle='#8b97a8'; x.font='600 26px -apple-system,Segoe UI,sans-serif'; x.textAlign='left'; x.fillText(rw[0],70,y);
+    x.fillStyle='#e9edf2'; x.font='800 28px -apple-system,Segoe UI,sans-serif'; x.textAlign='right'; x.fillText(rw[1],W-70,y); y+=66; });
+  const ok=c.saldo<=0;
+  x.fillStyle= ok?'#173d2c':'#3a2118'; rr(x,50,y-34,W-100,70,12); x.fill();
+  x.fillStyle= ok?'#3fb27f':'#d97a4e'; x.font='800 30px -apple-system,Segoe UI,sans-serif'; x.textAlign='left'; x.fillText(ok?'AL DÍA':'SALDO',70,y+12);
+  x.font='800 36px -apple-system,Segoe UI,sans-serif'; x.textAlign='right'; x.fillText(ok?'✓':('Gs. '+gs(c.saldo)),W-70,y+12);
   x.fillStyle='#8b97a8'; x.font='500 22px -apple-system,Segoe UI,sans-serif'; x.textAlign='center';
-  const hoy=new Date();
-  x.fillText('Generado el '+hoy.getDate()+'/'+(hoy.getMonth()+1)+'/'+hoy.getFullYear()+' · Academia DG', W/2, H-50);
+  const h=new Date(); x.fillText('Generado el '+h.getDate()+'/'+(h.getMonth()+1)+'/'+h.getFullYear()+' · Academia DG',W/2,H-50);
 }
-function roundRect(x,X,Y,w,h,r){ x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+h,r); x.arcTo(X+w,Y+h,X,Y+h,r); x.arcTo(X,Y+h,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); }
+function rr(x,X,Y,w,h,r){ x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath(); }
+function descargarComp(){ const a=state.alumnos[compIdx]; const l=document.createElement('a'); l.download='estado_'+normName(a.nombre).replace(/ /g,'_')+'.png'; l.href=document.getElementById('compCanvas').toDataURL('image/png'); document.body.appendChild(l); l.click(); document.body.removeChild(l); }
 
-function descargarComp(){
-  const a=state.alumnos[compIdx];
-  const link=document.createElement('a');
-  link.download='comprobante_'+normName(a.nombre).replace(/ /g,'_')+'_'+MESES[curM]+'_'+curY+'.png';
-  link.href=document.getElementById('compCanvas').toDataURL('image/png');
-  document.body.appendChild(link); link.click(); document.body.removeChild(link);
-}
-
-// ===== feriados =====
-function renderFeriados(){
-  const arr=(state.feriados[monthKey()]||[]).slice().sort((a,b)=>a-b);
-  const el=document.getElementById('feriadosList');
-  el.innerHTML = arr.length
-    ? arr.map(d=>`<span class="chip active" style="margin:3px;display:inline-block" data-rm="${d}">${d}/${curM+1} ✕</span>`).join('')
-    : '<span style="font-size:12px;color:var(--muted)">Sin feriados este mes.</span>';
-  el.querySelectorAll('[data-rm]').forEach(c=>{ c.onclick=()=>{ const d=+c.dataset.rm; state.feriados[monthKey()]=arr.filter(z=>z!==d); save(); renderFeriados(); render(); }; });
-}
-
-// ===== wire =====
-document.getElementById('prevMonth').onclick=()=>setMonth(-1);
-document.getElementById('nextMonth').onclick=()=>setMonth(1);
 document.getElementById('search').oninput=(e)=>{ query=e.target.value; render(); };
 document.querySelectorAll('.chip[data-filter]').forEach(ch=>{
-  ch.onclick=()=>{ document.querySelectorAll('.chip[data-filter]').forEach(c=>c.classList.remove('active')); ch.classList.add('active'); filter=ch.dataset.filter; render(); };
+  ch.onclick=()=>{ document.querySelectorAll('.chip[data-filter]').forEach(c=>{c.classList.remove('active');c.classList.remove('deuda');}); ch.classList.add('active'); if(ch.dataset.filter==='deuda') ch.classList.add('deuda'); filter=ch.dataset.filter; render(); };
 });
-document.getElementById('btnSync').onclick=()=>{
-  document.getElementById('fSheetId').value=state.sheetId; document.getElementById('fSheetTab').value=state.sheetTab;
-  document.getElementById('syncStatus').textContent=state.info||'';
-  document.getElementById('ovSync').classList.add('show');
-};
+document.getElementById('btnSync').onclick=()=>{ document.getElementById('fSheetId').value=state.sheetId; document.getElementById('fSheetTab').value=state.sheetTab; document.getElementById('syncStatus').textContent=state.info||''; document.getElementById('ovSync').classList.add('show'); };
 document.getElementById('doSync').onclick=sync;
 document.getElementById('closeSync').onclick=()=>document.getElementById('ovSync').classList.remove('show');
-document.getElementById('btnFeriados').onclick=()=>{ renderFeriados(); document.getElementById('ovFeriados').classList.add('show'); };
-document.getElementById('addFeriado').onclick=()=>{
-  const d=parseInt(document.getElementById('fFeriadoDia').value); if(!d||d<1||d>31) return;
-  if(!state.feriados[monthKey()]) state.feriados[monthKey()]=[];
-  if(!state.feriados[monthKey()].includes(d)) state.feriados[monthKey()].push(d);
-  document.getElementById('fFeriadoDia').value=''; save(); renderFeriados(); render();
-};
-document.getElementById('closeFeriados').onclick=()=>document.getElementById('ovFeriados').classList.remove('show');
 document.getElementById('compDownload').onclick=descargarComp;
 document.getElementById('compWA').onclick=()=>{ if(compIdx!=null) enviarWA(compIdx); };
 document.getElementById('closeComp').onclick=()=>document.getElementById('ovComp').classList.remove('show');
-[ 'ovSync','ovFeriados','ovComp' ].forEach(id=>{ document.getElementById(id).onclick=(e)=>{ if(e.target.id===id) document.getElementById(id).classList.remove('show'); }; });
+['ovSync','ovComp'].forEach(id=>{ document.getElementById(id).onclick=(e)=>{ if(e.target.id===id) document.getElementById(id).classList.remove('show'); }; });
 
 load(); render();
 </script>
